@@ -257,12 +257,20 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		else {
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
+
+            /**
+             *
+             * 校验下是否是原型创建Bean,那么非单例的循环依赖会抛异常。
+             */
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
 
 			// Check if bean definition exists in this factory.
 			BeanFactory parentBeanFactory = getParentBeanFactory();
+            /**
+             * 如果beanName 不在自己的容器中，并有父容器的话，在 父容器查找
+             */
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
 				String nameToLookup = originalBeanName(name);
@@ -285,18 +293,33 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+                /**
+                 * 这里保证在实例化Bean时，保证其依赖的Bean 已经实例化
+                 * 例如：<bean name="one" class="test.One" depends-on="two" >
+                 */
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
+
+					    //代表dep 也依赖beanName， 表示循环依赖的话则抛异常
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
+                        /**
+                         *
+                         * 这里注册依赖关系，并且获取依赖的Bean
+                         */
 						registerDependentBean(dep, beanName);
 						getBean(dep);
 					}
 				}
 
+
+                /**
+                 *
+                 * 如果是单例Bean
+                 */
 				// Create bean instance.
 				if (mbd.isSingleton()) {
 					sharedInstance = getSingleton(beanName, new ObjectFactory<Object>() {
@@ -317,6 +340,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
 				}
 
+                /**
+                 *
+                 * 如果是原型Bean
+                 */
 				else if (mbd.isPrototype()) {
 					// It's a prototype -> create a new instance.
 					Object prototypeInstance = null;
@@ -331,6 +358,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				else {
+                    /**
+                     * 其他类型，其他的原型必须在这scopes，通过scope.get 得到一个未初始化的Bean
+                     */
 					String scopeName = mbd.getScope();
 					final Scope scope = this.scopes.get(scopeName);
 					if (scope == null) {
@@ -1598,16 +1628,24 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Get the object for the given bean instance, either the bean
 	 * instance itself or its created object in case of a FactoryBean.
-	 * @param beanInstance the shared bean instance
+
+     *
+     *
+	 * @param beanInstance the shared bean instance   共享初始化的Bean
 	 * @param name name that may include factory dereference prefix
 	 * @param beanName the canonical bean name
 	 * @param mbd the merged bean definition
 	 * @return the object to expose for the bean
 	 */
+
 	protected Object getObjectForBeanInstance(
 			Object beanInstance, String name, String beanName, RootBeanDefinition mbd) {
 
-		// Don't let calling code try to dereference the factory if the bean isn't a factory.
+        /**
+         *
+         * 这里判断，name 是工厂Bean Name(既&打头)，但是beanInstance 实例又不是一个工厂bean,跑异常
+         */
+        // Don't let calling code try to dereference the factory if the bean isn't a factory.
 		if (BeanFactoryUtils.isFactoryDereference(name) && !(beanInstance instanceof FactoryBean)) {
 			throw new BeanIsNotAFactoryException(transformedBeanName(name), beanInstance.getClass());
 		}
@@ -1615,7 +1653,15 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Now we have the bean instance, which may be a normal bean or a FactoryBean.
 		// If it's a FactoryBean, we use it to create a bean instance, unless the
 		// caller actually wants a reference to the factory.
-		if (!(beanInstance instanceof FactoryBean) || BeanFactoryUtils.isFactoryDereference(name)) {
+
+        /**
+         * 这里beanInstance 可能是一个工厂Bean,或者是一个普通Bean
+         * !(beanInstance instanceof FactoryBean): 如果是一个普通的Bean,直接返回，
+         *
+         *
+         *
+         */
+        if (!(beanInstance instanceof FactoryBean) || BeanFactoryUtils.isFactoryDereference(name)) {
 			return beanInstance;
 		}
 

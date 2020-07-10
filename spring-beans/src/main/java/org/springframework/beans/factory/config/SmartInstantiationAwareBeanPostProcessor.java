@@ -21,6 +21,10 @@ import java.lang.reflect.Constructor;
 import org.springframework.beans.BeansException;
 
 /**
+ *
+ *  扩展InstantiationAwareBeanPostProcessor 接口，并且添加一个回调接口来预测这个Bean 的最终类型
+ *
+ *  该接口是一个特殊的接口，一般主要用于SpringFrame 内部，通常，应用级别的后置处理器只要实现BeanPostProcessor,或者派生InstantiationAwareBeanPostProcessorAdapter 类
  * Extension of the {@link InstantiationAwareBeanPostProcessor} interface,
  * adding a callback for predicting the eventual type of a processed bean.
  *

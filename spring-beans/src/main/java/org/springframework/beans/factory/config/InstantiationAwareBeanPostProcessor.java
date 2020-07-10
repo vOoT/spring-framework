@@ -46,13 +46,27 @@ import org.springframework.beans.PropertyValues;
 public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
 	/**
+	 *
+	 * 在目标Bean 实例化前，运用该BeanPostProcessor
+	 *
+	 * 返回的Bean 对象可以是代理对象而不是目标的对象，有效地抑制目标bean的默认实例化
+	 *
+	 * 如果一个非null的对象返回，那么Bean创建的流程将会快速截断，那唯一进一步处理该对象的是BeanPostProcessor.postProcessAfterInitialization
+	 *
+	 * 该回调只能运用到Bean 的Definitions 和Bean Class, 特别是不能运用到带Factory-method 的Bean.
+	 *
+	 *
 	 * Apply this BeanPostProcessor <i>before the target bean gets instantiated</i>.
 	 * The returned bean object may be a proxy to use instead of the target bean,
 	 * effectively suppressing default instantiation of the target bean.
+	 *
+	 *
 	 * <p>If a non-null object is returned by this method, the bean creation process
 	 * will be short-circuited. The only further processing applied is the
 	 * {@link #postProcessAfterInitialization} callback from the configured
 	 * {@link BeanPostProcessor BeanPostProcessors}.
+	 *
+	 *
 	 * <p>This callback will only be applied to bean definitions with a bean class.
 	 * In particular, it will not be applied to beans with a "factory-method".
 	 * <p>Post-processors may implement the extended
@@ -69,6 +83,11 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException;
 
 	/**
+	 *
+	 *  当一个Bean 通过构造器或者工厂方法得到Bean 之后，执行该操作，在此时 Bean 的属性注入还没有开始，
+	 * 这是对给定bean实例执行字段注入的理想回调。
+	 *
+	 *
 	 * Perform operations after the bean has been instantiated, via a constructor or factory method,
 	 * but before Spring property population (from explicit properties or autowiring) occurs.
 	 * <p>This is the ideal callback for performing field injection on the given bean instance.
@@ -85,18 +104,25 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException;
 
 	/**
+	 * 在工厂将给定的属性值应用到给定bean之前，对它们进行后处理。运行监测所有的依赖是否已经完全，例如打上@Required注解的Setter方法
+	 * 或者替换参数值，典型通过基于原始的PropertyValues , new MutablePropertyValues() 进行替换
+	 *
+	 *
+	 *
+	 *
 	 * Post-process the given property values before the factory applies them
 	 * to the given bean. Allows for checking whether all dependencies have been
 	 * satisfied, for example based on a "Required" annotation on bean property setters.
 	 * <p>Also allows for replacing the property values to apply, typically through
 	 * creating a new MutablePropertyValues instance based on the original PropertyValues,
 	 * adding or removing specific values.
-	 * @param pvs the property values that the factory is about to apply (never {@code null})
-	 * @param pds the relevant property descriptors for the target bean (with ignored
+	 *
+	 * @param pvs 工厂即将应用的属性值    the property values that the factory is about to apply (never {@code null})
+	 * @param pds 目标bean的相关属性描述符-那些工厂专门处理——已经过滤掉了  the relevant property descriptors for the target bean (with ignored
 	 * dependency types - which the factory handles specifically - already filtered out)
 	 * @param bean the bean instance created, but whose properties have not yet been set
 	 * @param beanName the name of the bean
-	 * @return the actual property values to apply to the given bean
+	 * @return 应用于给定bean的实际属性值  the actual property values to apply to the given bean
 	 * (can be the passed-in PropertyValues instance), or {@code null}
 	 * to skip property population
 	 * @throws org.springframework.beans.BeansException in case of errors
